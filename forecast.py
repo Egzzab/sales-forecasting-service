@@ -12,7 +12,7 @@ def make_forecast(X, config_dict, price_for_week, promo_for_week, **other_param)
         model = model_name[modeln]
         df_learn = X[X["product_id"] == prod] if modeln != "cat_str_fd" else X
         param = info["parameters"]
-        pred_prod = model(df_learn, price_for_week, promo_for_week, param, **other_param)############
+        pred_prod = model(df_learn, price_for_week, promo_for_week, param, **other_param)
         fin_pred[prod] = pred_prod[prod].tolist()
         if modeln == "cat_str_fd":
             res_glob_cat = pred_prod

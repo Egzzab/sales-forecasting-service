@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-#функция обработки данных -- создание признаков
 def f_ing(df, orig_date):
     df = df.copy()
     df["date"] = pd.to_datetime(df["date"])

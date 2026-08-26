@@ -10,11 +10,11 @@ class CompanyDataNotFoundError(Exception):
 
 def get_sales_history(company_id, dbname, user, password, host, port):
     with psycopg.connect(
-         dbname = dbname,        #"forecast_sales",
-         user =  user,           #"postgres", 
-         password = password,    #"egor",
-         host = host,            #"localhost",
-         port = port             #"5432"
+         dbname = dbname,        
+         user =  user,            
+         password = password,    
+         host = host,           
+         port = port             
      ) as conn:
         with conn.cursor() as cursor:
             cursor.execute("SELECT * FROM sales_history WHERE company_id = %s", (company_id,))
@@ -52,11 +52,11 @@ def save_sales_history(df, company_id, dbname, user, password, host, port):
 
 def add_company(company_name, dbname, user, password, host, port):
     with psycopg.connect(
-        dbname = dbname,        #"forecast_sales",
-        user =  user,           #"postgres", 
-        password = password,    #"egor",
-        host = host,            #"localhost",
-        port = port             #"5432"
+        dbname = dbname,        
+        user =  user,          
+        password = password,   
+        host = host,          
+        port = port           
      ) as conn:
         with conn.cursor() as cursor:
             cursor.execute("INSERT INTO companies(company_name) VALUES (%s) RETURNING company_id", (company_name,))
@@ -65,11 +65,11 @@ def add_company(company_name, dbname, user, password, host, port):
 
 def get_config(company_id, dbname, user, password, host, port):
     with psycopg.connect(
-        dbname = dbname,        #"forecast_sales",
-        user =  user,           #"postgres", 
-        password = password,    #"egor",
-        host = host,            #"localhost",
-        port = port             #"5432"
+        dbname = dbname,        
+        user =  user,           
+        password = password,   
+        host = host,            
+        port = port            
      ) as conn:
         with conn.cursor() as cursor:
             cursor.execute("SELECT config FROM model_configs WHERE company_id = %s", (company_id,))
@@ -82,11 +82,11 @@ def get_config(company_id, dbname, user, password, host, port):
 def save_config(company_id, conf, dbname, user, password, host, port):
     update_at = conf["updated_at"]
     with psycopg.connect(
-        dbname = dbname,        #"forecast_sales",
-        user =  user,           #"postgres", 
-        password = password,    #"egor",
-        host = host,            #"localhost",
-        port = port             #"5432"
+        dbname = dbname,        
+        user =  user,           
+        password = password,    
+        host = host,           
+        port = port             
      ) as conn:
         with conn.cursor() as cursor:
             cursor.execute("""INSERT INTO model_configs(company_id, config, update_at) VALUES (%s,%s,%s) ON CONFLICT (company_id)

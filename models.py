@@ -47,10 +47,7 @@ def seq_pred_2(X, model, price_for_week, promo_for_week, **other_param):
     orig_date = other_param["orig_date"]
     X_train = X
     y_train = X["sales"]
-    # создание новых дней
     point = X_train["date"].max()
-    #prepr = X[['date', 'product_id', 'category', 'price', 'promo', 'sales']].copy()
-    #new_day = prepr[prepr["date"] == point].copy()
     fin = {}
     for prod in X_train["product_id"].unique():
         X_train_prod = X_train[X_train["product_id"] == prod]
@@ -126,7 +123,6 @@ def str_pred_fst(X, model, price_for_week, promo_for_week, **other_param):
         X_train = X_train[sales_hor.notnull()]
         X_train["y_train"] = sales_hor.dropna()
         dfs.append(X_train)
-        # далее дф для прогноза
         ld_hor = last_day.copy()
         cur_date = last_date + pd.Timedelta(days= hor)
         ld_hor["curr_sales"] = sales_ld
@@ -162,7 +158,7 @@ def cat_str_fd(X, price_for_week, promo_for_week, param, **other_param):
     model = Pipeline([("preprocessor", selector), ("model", CatBoostRegressor(cat_features= categorical_nominal, verbose=False, thread_count=-1, **param))])
     return str_pred_fst_cat(X, model, price_for_week, promo_for_week, **other_param)
 
-def str_pred_fst_cat(X, model, price_for_week, promo_for_week, **other_param):# это для катбуст
+def str_pred_fst_cat(X, model, price_for_week, promo_for_week, **other_param):
     orig_date = other_param['orig_date']    
     last_date = X["date"].max()
     last_day = X[X["date"] == X["date"].max()]
@@ -215,14 +211,10 @@ def str_pred_fst_cat(X, model, price_for_week, promo_for_week, **other_param):# 
     y_train = all_df["y_train"]
     model.fit(all_df, y_train)
     test = test.sort_values(["product_id", "horizont"]).reset_index(drop= True)
-    #price_arr= np.array([v.to_numpy() for v in price_for_week.values()]).reshape(-1)
-    #test["price"] = price_arr
     for prod in test["product_id"].unique():
         mask = test["product_id"] == prod
         test.loc[mask, "price"] = price_for_week[prod]
         test.loc[mask, "promo"] = promo_for_week[prod]
-    #promo_arr= np.array([v.to_numpy() for v in promo_for_week.values()]).reshape(-1)
-    #test["promo"] = promo_arr
     y_pred = model.predict(test)
     y_pred = np.maximum(y_pred, 0).reshape(-1, 7).transpose()
     return pd.DataFrame(y_pred, columns= test["product_id"].unique(), index= range(1, 8))

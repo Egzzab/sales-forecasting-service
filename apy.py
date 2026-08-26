@@ -1,17 +1,13 @@
-from fastapi import FastAPI, Request, HTTPException, UploadFile
+from fastapi import FastAPI,  HTTPException, UploadFile
 from pydantic import BaseModel, field_validator, model_validator
 from forecast import make_forecast
 from data import get_sales_history, save_sales_history, add_company, get_config, save_config, ConfigNotFoundError, CompanyDataNotFoundError
 from feature_engineering import f_ing
 from param import make_param
-from storage import load_json
-from contextlib import asynccontextmanager
 from upload import to_df, prepare_sales_df, SalesDataValidationError
 from make_test import make_test
 from history_validation import check_data, HistoryValidationError
 
-#class ConfigMismatchError(Exception):
-#    pass
 
 
 class RequestData(BaseModel):
@@ -63,9 +59,7 @@ class CompanyCreate(BaseModel):
         return value
 
 
-#@asynccontextmanager
-#async def lifespan(app: FastAPI):
-    #yield
+
 
 
 
@@ -76,7 +70,7 @@ app = FastAPI()
 
 
 @app.post("/forecast", response_model = dict[str, list[float]])
-def forecast(data: RequestData, request: Request, company_id: int):
+def forecast(data: RequestData, company_id: int):
     
     try:
         df, orig_date = get_sales_history(company_id, "forecast_sales", "postgres", "egor", "localhost", "5432")

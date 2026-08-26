@@ -4,8 +4,7 @@ import pandas as pd
 from registry import model_name, model_weight
 
 
-class NoValidModelError(Exception):
-    pass
+
 
 
 def grid(model, X, cv =4, **other_param):
