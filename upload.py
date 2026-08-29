@@ -77,7 +77,7 @@ def to_df(file):
 
 def prepare_sales_df(df):
     try:
-        df= df[['date', 'product_id', 'category', 'price', 'promo', 'sales']]
+        df= df[['date', 'product_id', 'category', 'price', 'promo', 'sales']].copy()
     except KeyError:
         raise MissingRequiredColumnError("Отсутствует необходимая колонка")
         
