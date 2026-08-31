@@ -25,12 +25,14 @@ def get_sales_history(company_id, dbname, user, password, host, port):
         raise CompanyDataNotFoundError
         
     df["date"] = pd.to_datetime(df["date"])
+    df["price"] = df["price"].astype(float)
     orig_date = df["date"].min()
     return df, orig_date
 
 
 
 def save_sales_history(df, company_id, dbname, user, password, host, port):
+    df = df.copy()
     df["company_id"] = company_id
     with psycopg.connect(
         dbname = dbname,        #"forecast_sales",
