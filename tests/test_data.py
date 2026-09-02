@@ -6,6 +6,7 @@ from pandas import Timestamp
 import psycopg
 from uuid import uuid4
 from config import get_var_db
+import os
 
 @pytest.fixture
 def df():
@@ -23,7 +24,14 @@ def df():
     )
 
 
-
+@pytest.fixture(autouse=True)
+def use_test_db(monkeypatch):
+    name_db_test = os.getenv("DB_NAME_TEST")
+    if name_db_test is None:
+        pytest.fail("Не задана переменная DB_NAME_TEST")
+    if "test" not in name_db_test.lower():
+        pytest.fail("DB_NAME_TEST должна указывать на тестовую БД")
+    monkeypatch.setenv("DB_NAME", name_db_test)
 
 
 
