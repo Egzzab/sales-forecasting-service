@@ -73,7 +73,7 @@ app = FastAPI()
 def forecast(data: RequestData, company_id: int):
     
     try:
-        df, orig_date = get_sales_history(company_id, "forecast_sales", "postgres", "egor", "localhost", "5432")
+        df, orig_date = get_sales_history(company_id)
     except CompanyDataNotFoundError:
         raise HTTPException(status_code=409, detail="В системе отсутствует история продаж для этой компании")
 
@@ -86,7 +86,7 @@ def forecast(data: RequestData, company_id: int):
     df = f_ing(df, orig_date)
     other = make_param(orig_date)
     try:
-        dc = get_config(company_id, "forecast_sales", "postgres", "egor", "localhost", "5432")
+        dc = get_config(company_id)
     except ConfigNotFoundError:
         raise HTTPException(status_code = 409, detail = "Конфигурация для компании не найдена")
         
@@ -108,7 +108,7 @@ def load_sales_history(file: UploadFile, company_id: int):
     except SalesDataValidationError as err:
         raise HTTPException(status_code=422, detail = str(err))
         
-    save_sales_history(df, company_id, "forecast_sales", "postgres","egor", "localhost", "5432")
+    save_sales_history(df, company_id)
     return {"status": "ready"}
 
 
@@ -116,7 +116,7 @@ def load_sales_history(file: UploadFile, company_id: int):
 
 @app.post("/companies")
 def make_company(company: CompanyCreate):
-    company_id = add_company(company.name, "forecast_sales", "postgres", "egor", "localhost", "5432")
+    company_id = add_company(company.name)
     return {"id": company_id}
 
 
@@ -124,7 +124,7 @@ def make_company(company: CompanyCreate):
 @app.post("/build_config")
 def build_model_config(company_id: int):
     try:
-        df, orig_date = get_sales_history(company_id, "forecast_sales", "postgres", "egor", "localhost", "5432")
+        df, orig_date = get_sales_history(company_id)
     except CompanyDataNotFoundError:
         raise HTTPException(status_code=409, detail="В системе отсутствует история продаж для этой компании")
         
@@ -136,7 +136,7 @@ def build_model_config(company_id: int):
     df = f_ing(df, orig_date)
     other = make_param(orig_date)
     conf = make_test(df, **other)
-    save_config(company_id, conf, 'forecast_sales', "postgres", "egor", "localhost", "5432")
+    save_config(company_id, conf)
     return {"status": "ready"}
     
     

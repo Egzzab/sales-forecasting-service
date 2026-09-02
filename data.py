@@ -1,5 +1,6 @@
 import pandas as pd
 import psycopg 
+from config import get_var_db
 
 
 class ConfigNotFoundError(Exception):
@@ -8,14 +9,8 @@ class ConfigNotFoundError(Exception):
 class CompanyDataNotFoundError(Exception):
     pass
 
-def get_sales_history(company_id, dbname, user, password, host, port):
-    with psycopg.connect(
-         dbname = dbname,        
-         user =  user,            
-         password = password,    
-         host = host,           
-         port = port             
-     ) as conn:
+def get_sales_history(company_id):
+    with psycopg.connect(**get_var_db()) as conn:
         with conn.cursor() as cursor:
             cursor.execute("SELECT * FROM sales_history WHERE company_id = %s", (company_id,))
             col = [col.name for col in cursor.description]
@@ -31,16 +26,10 @@ def get_sales_history(company_id, dbname, user, password, host, port):
 
 
 
-def save_sales_history(df, company_id, dbname, user, password, host, port):
+def save_sales_history(df, company_id):
     df = df.copy()
     df["company_id"] = company_id
-    with psycopg.connect(
-        dbname = dbname,        #"forecast_sales",
-        user =  user,           #"postgres", 
-        password = password,    #"egor",
-        host = host,            #"localhost",
-        port = port             #"5432"
-     ) as conn:
+    with psycopg.connect(**get_var_db()) as conn:
         with conn.cursor() as cursor:
             cursor.executemany("""INSERT INTO sales_history(company_id, date, product_id, category, price, promo, sales)
                                 VALUES (%s, %s, %s, %s, %s, %s, %s) ON CONFLICT (company_id, date, product_id)
@@ -52,27 +41,15 @@ def save_sales_history(df, company_id, dbname, user, password, host, port):
 
 
 
-def add_company(company_name, dbname, user, password, host, port):
-    with psycopg.connect(
-        dbname = dbname,        
-        user =  user,          
-        password = password,   
-        host = host,          
-        port = port           
-     ) as conn:
+def add_company(company_name):
+    with psycopg.connect(**get_var_db()) as conn:
         with conn.cursor() as cursor:
             cursor.execute("INSERT INTO companies(company_name) VALUES (%s) RETURNING company_id", (company_name,))
             return cursor.fetchone()[0]
 
 
-def get_config(company_id, dbname, user, password, host, port):
-    with psycopg.connect(
-        dbname = dbname,        
-        user =  user,           
-        password = password,   
-        host = host,            
-        port = port            
-     ) as conn:
+def get_config(company_id):
+    with psycopg.connect(**get_var_db()) as conn:
         with conn.cursor() as cursor:
             cursor.execute("SELECT config FROM model_configs WHERE company_id = %s", (company_id,))
             conf= cursor.fetchone()
@@ -81,15 +58,9 @@ def get_config(company_id, dbname, user, password, host, port):
             return conf[0]
                 
      
-def save_config(company_id, conf, dbname, user, password, host, port):
+def save_config(company_id, conf):
     update_at = conf["updated_at"]
-    with psycopg.connect(
-        dbname = dbname,        
-        user =  user,           
-        password = password,    
-        host = host,           
-        port = port             
-     ) as conn:
+    with psycopg.connect(**get_var_db()) as conn:
         with conn.cursor() as cursor:
             cursor.execute("""INSERT INTO model_configs(company_id, config, update_at) VALUES (%s,%s,%s) ON CONFLICT (company_id)
                             DO UPDATE SET config = EXCLUDED.config, update_at = EXCLUDED.update_at""", (company_id, psycopg.types.json.Jsonb(conf), update_at))
