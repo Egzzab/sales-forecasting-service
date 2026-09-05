@@ -1,0 +1,11 @@
+fastapi
+pydantic
+python-dotenv
+pandas
+psycopg[binary]
+numpy
+scikit-learn
+catboost
+prophet
+uvicorn
+python-multipart

@@ -8,7 +8,7 @@ from feature_engineering import f_ing
 import numpy as np
 from sklearn.preprocessing import FunctionTransformer
 from catboost import CatBoostRegressor
-import prophet_setup
+#import prophet_setup
 from prophet import Prophet
 
 
