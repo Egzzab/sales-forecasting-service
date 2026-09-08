@@ -2,6 +2,7 @@ import os
 
 import pytest
 from dotenv import load_dotenv
+from data_base import make_engine
 
 
 load_dotenv()
@@ -22,3 +23,11 @@ def use_test_db(monkeypatch):
         pytest.fail("Рабочая и тестовая БД не должны совпадать")
 
     monkeypatch.setenv("DB_NAME", test_db_name)
+    make_engine.cache_clear()
+
+    yield
+
+    engine = make_engine()
+    engine.dispose()
+    make_engine.cache_clear()
+

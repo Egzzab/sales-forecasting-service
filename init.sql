@@ -39,4 +39,10 @@ CREATE TABLE IF NOT EXISTS public.sales_history
         ON DELETE NO ACTION
 )
 
+;
+\connect postgres
+
+CREATE DATABASE forecast_sales_test
+TEMPLATE forecast_sales;
+
 

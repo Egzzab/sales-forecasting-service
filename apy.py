@@ -1,7 +1,7 @@
 from fastapi import FastAPI,  HTTPException, UploadFile
 from pydantic import BaseModel, field_validator, model_validator
 from forecast import make_forecast
-from data import get_sales_history, save_sales_history, add_company, get_config, save_config, ConfigNotFoundError, CompanyDataNotFoundError
+from data_base import get_sales_history, save_sales_history, add_company, get_config, save_config, ConfigNotFoundError, CompanyDataNotFoundError
 from feature_engineering import f_ing
 from param import make_param
 from upload import to_df, prepare_sales_df, SalesDataValidationError

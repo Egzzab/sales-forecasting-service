@@ -22,6 +22,18 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+  tests:
+    profiles:
+      - test
+    build:
+      context: .
+      dockerfile: Dockerfile.tests
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    command: python -m pytest
 
 
 volumes:

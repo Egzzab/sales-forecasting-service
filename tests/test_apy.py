@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 from unittest.mock import patch
 from upload import SalesDataValidationError
-from data import CompanyDataNotFoundError, ConfigNotFoundError
+from data_base import CompanyDataNotFoundError, ConfigNotFoundError
 from history_validation import HistoryValidationError
 import pandas as pd
 import pytest

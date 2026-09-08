@@ -9,3 +9,6 @@ catboost
 prophet
 uvicorn
 python-multipart
+pytest
+sqlalchemy
+httpx2
