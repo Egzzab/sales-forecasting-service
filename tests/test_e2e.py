@@ -35,11 +35,20 @@ def test_user_scenario(sales_history_csv):
     company_name = f"e2e_{uuid4().hex}"
     company_id = None
     db_config = get_var_db()
+    email = f'alpak{uuid4().hex}@email.cm'
+    user_data = {'email': email, 'password': 'qwerty123'}
 
     assert "test" in db_config["dbname"].lower()
 
     try:
-        response = client.post("/companies", json={"name": company_name})
+        response = client.post("/register", json = user_data)
+        assert response.status_code == 200
+
+        response = client.post("/login", json = user_data)
+        assert response.status_code == 200
+        token = response.json()['access_token']
+
+        response = client.post("/companies", json={"name": company_name}, headers={"Authorization": f"Bearer {token}"})
 
         assert response.status_code == 200
         company_id = response.json()["id"]
@@ -48,12 +57,13 @@ def test_user_scenario(sales_history_csv):
         upload_response = client.post(
             f"/upload?company_id={company_id}",
             files={"file": ("sales.csv", sales_history_csv, "text/csv")},
+            headers={"Authorization": f"Bearer {token}"}
         )
 
         assert upload_response.status_code == 200
         assert upload_response.json() == {"status": "ready"}
 
-        build_config_response = client.post(f"/build_config?company_id={company_id}")
+        build_config_response = client.post(f"/build_config?company_id={company_id}", headers={"Authorization": f"Bearer {token}"})
 
         assert build_config_response.status_code == 200
         assert build_config_response.json() == {"status": "ready"}
@@ -63,7 +73,7 @@ def test_user_scenario(sales_history_csv):
             json={
                 "price": {"P001": [100, 101, 102, 103, 104, 105, 106]},
                 "promo": {"P001": [0, 0, 1, 0, 0, 1, 0]},
-            },
+            }, headers={"Authorization": f"Bearer {token}"}
         )
 
         assert forecast_response.status_code == 200
@@ -99,3 +109,4 @@ def test_user_scenario(sales_history_csv):
                         "DELETE FROM companies WHERE company_id = %s",
                         (cleanup_company_id,),
                     )
+                cursor.execute('DELETE FROM users_info WHERE email = %s', (email,))

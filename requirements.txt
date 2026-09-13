@@ -12,3 +12,6 @@ python-multipart
 pytest
 sqlalchemy
 httpx2
+pwdlib[argon2]
+PyJWT  
+email-validator

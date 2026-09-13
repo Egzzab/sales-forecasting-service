@@ -1,11 +1,12 @@
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session
-from sqlalchemy import create_engine, URL,  Text, select,  Numeric
+from sqlalchemy import create_engine, URL,  Text, select,  Numeric, ForeignKey
 from sqlalchemy.dialects.postgresql import insert, JSONB
 from config import get_var_db
 from datetime import date as dt
 from decimal import Decimal
 import pandas as pd
 from functools import lru_cache
+from sqlalchemy.exc import IntegrityError
 
 
 class CompanyDataNotFoundError(Exception):
@@ -14,9 +15,21 @@ class CompanyDataNotFoundError(Exception):
 class ConfigNotFoundError(Exception):
     pass
 
+class EmailAlreadyExistsError(Exception):
+    pass
+
 
 class Base(DeclarativeBase):
     pass
+
+
+
+class User(Base):
+    __tablename__ = "users_info"
+
+    user_id: Mapped[int] = mapped_column(primary_key=True)
+    email: Mapped[str] = mapped_column(Text, unique=True)
+    password_hash: Mapped[str] =mapped_column(Text)
 
 
 class Company(Base):
@@ -24,6 +37,7 @@ class Company(Base):
 
     company_id: Mapped[int] = mapped_column(primary_key=True)
     company_name: Mapped[str | None] = mapped_column(Text)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users_info.user_id"))
 
 
 class SalesHistory(Base):
@@ -44,7 +58,6 @@ class ModelConfigs(Base):
     company_id: Mapped[int] = mapped_column(primary_key=True)
     config: Mapped[dict | None] = mapped_column(JSONB)
     update_at: Mapped[dt | None] = mapped_column()
-
 
 
 
@@ -75,9 +88,9 @@ def make_engine():
 
 
 
-def add_company(company_name):
+def add_company(company_name, user_id):
     with Session(make_engine()) as session:
-        companyn = Company(company_name = company_name)
+        companyn = Company(company_name = company_name, user_id= user_id)
         session.add(companyn)
         session.commit()
         return companyn.company_id
@@ -157,3 +170,26 @@ def save_config(company_id, conf):
         )
         session.execute(stmt)
         session.commit()
+
+
+def add_user(email, password_hash):
+    with Session(make_engine()) as session:
+        person = User(email = email, password_hash = password_hash)
+        try:
+            session.add(person)
+            session.commit()
+        except IntegrityError:
+            session.rollback()
+            raise EmailAlreadyExistsError
+        return person.user_id
+
+def get_user(email):
+    with Session(make_engine()) as session:
+        stmt = select(User).where(User.email == email)
+        user = session.scalars(stmt).one_or_none()
+        return user
+
+def find_user_have_company(user_id, company_id):
+    with Session(make_engine()) as session:
+        stmt = select(Company).where(Company.company_id == company_id, Company.user_id == user_id)
+        return session.scalar(stmt)

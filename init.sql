@@ -1,8 +1,19 @@
+CREATE TABLE users_info(
+	user_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	email TEXT NOT NULL UNIQUE,
+	password_hash TEXT NOT NULL
+)
+;
+
+
+
 CREATE TABLE IF NOT EXISTS public.companies
 (
     company_id integer NOT NULL GENERATED ALWAYS AS IDENTITY ( INCREMENT 1 START 1 MINVALUE 1 MAXVALUE 2147483647 CACHE 1 ),
     company_name text COLLATE pg_catalog."default",
-    CONSTRAINT companies_pkey PRIMARY KEY (company_id)
+    user_id INT NOT NULL,
+    CONSTRAINT companies_pkey PRIMARY KEY (company_id),
+    CONSTRAINT  companies_fk FOREIGN KEY (user_id) REFERENCES users_info(user_id)
 )
 ;
 
@@ -40,6 +51,10 @@ CREATE TABLE IF NOT EXISTS public.sales_history
 )
 
 ;
+
+
+
+
 \connect postgres
 
 CREATE DATABASE forecast_sales_test

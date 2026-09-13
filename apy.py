@@ -1,13 +1,15 @@
-from fastapi import FastAPI,  HTTPException, UploadFile
-from pydantic import BaseModel, field_validator, model_validator
+from fastapi import FastAPI,  HTTPException, UploadFile, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from pydantic import BaseModel, field_validator, model_validator, EmailStr, Field
 from forecast import make_forecast
-from data_base import get_sales_history, save_sales_history, add_company, get_config, save_config, ConfigNotFoundError, CompanyDataNotFoundError
+from data_base import get_sales_history, save_sales_history, add_company, get_config, save_config, ConfigNotFoundError, CompanyDataNotFoundError, add_user, EmailAlreadyExistsError, get_user, find_user_have_company
 from feature_engineering import f_ing
 from param import make_param
 from upload import to_df, prepare_sales_df, SalesDataValidationError
 from make_test import make_test
 from history_validation import check_data, HistoryValidationError
-
+from auth_layer import hash_password, verify_password, create_access_token, decode_access_token
+from jwt import InvalidTokenError
 
 
 class RequestData(BaseModel):
@@ -58,9 +60,37 @@ class CompanyCreate(BaseModel):
         
         return value
 
+class RegisterData(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=8, max_length=128)
+
+
+class LoginUser(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=8, max_length=128)
 
 
 
+security = HTTPBearer()
+
+
+def get_user_id(
+        credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    token = credentials.credentials
+    try:
+        user_id = decode_access_token(token)
+    except InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Токен не действителен")
+    return user_id
+
+
+
+
+def get_company_access(company_id: int, user_id: int = Depends(get_user_id)):
+    if find_user_have_company(user_id, company_id) is None:
+        raise HTTPException(status_code=404, detail="Ресурс не найден")
+    return company_id
 
 
 
@@ -70,8 +100,7 @@ app = FastAPI()
 
 
 @app.post("/forecast", response_model = dict[str, list[float]])
-def forecast(data: RequestData, company_id: int):
-    
+def forecast(data: RequestData, company_id: int = Depends(get_company_access)):
     try:
         df, orig_date = get_sales_history(company_id)
     except CompanyDataNotFoundError:
@@ -102,12 +131,12 @@ def forecast(data: RequestData, company_id: int):
 
 
 @app.post("/upload")
-def load_sales_history(file: UploadFile, company_id: int):
+def load_sales_history(file: UploadFile, company_id: int = Depends(get_company_access)):
     try:
         df=prepare_sales_df(to_df(file))
     except SalesDataValidationError as err:
         raise HTTPException(status_code=422, detail = str(err))
-        
+    
     save_sales_history(df, company_id)
     return {"status": "ready"}
 
@@ -115,14 +144,14 @@ def load_sales_history(file: UploadFile, company_id: int):
 
 
 @app.post("/companies")
-def make_company(company: CompanyCreate):
-    company_id = add_company(company.name)
+def make_company(company: CompanyCreate, user_id: int = Depends(get_user_id)):
+    company_id = add_company(company.name, user_id)
     return {"id": company_id}
 
 
 
 @app.post("/build_config")
-def build_model_config(company_id: int):
+def build_model_config(company_id: int = Depends(get_company_access)):
     try:
         df, orig_date = get_sales_history(company_id)
     except CompanyDataNotFoundError:
@@ -139,11 +168,31 @@ def build_model_config(company_id: int):
     save_config(company_id, conf)
     return {"status": "ready"}
     
-    
-    
+
+@app.post("/register")
+def register_user(info_user: RegisterData): 
+    password_hash = hash_password(info_user.password)
+    try:
+        user_id = add_user(info_user.email, password_hash)
+    except EmailAlreadyExistsError:
+        raise HTTPException(status_code=409, detail="Пользователь с таким email уже существует")
+    return {'user_id': user_id}
     
 
 
+@app.post("/login")
+def login_user(info_user: LoginUser):
+    user = get_user(info_user.email)
+    if user is None:
+        raise HTTPException(status_code=401, detail="Неверный email или пароль")
+    if not verify_password(info_user.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Неверный email или пароль")
+    token = create_access_token(user.user_id)
+    return {
+        'access_token': token,
+        'token_type': 'bearer'
+    }
+    
 
 
     
