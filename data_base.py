@@ -40,6 +40,7 @@ class Company(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users_info.user_id"))
 
 
+
 class SalesHistory(Base):
     __tablename__ = "sales_history"
 
@@ -49,13 +50,13 @@ class SalesHistory(Base):
     price: Mapped[Decimal | None] = mapped_column(Numeric(12,2))
     promo: Mapped[bool | None] = mapped_column()
     sales: Mapped[int | None] = mapped_column()
-    company_id: Mapped[int] = mapped_column(primary_key=True)
+    company_id: Mapped[int] = mapped_column(ForeignKey("companies.company_id"), primary_key=True)
 
 
 class ModelConfigs(Base):
     __tablename__ = "model_configs"
 
-    company_id: Mapped[int] = mapped_column(primary_key=True)
+    company_id: Mapped[int] = mapped_column(ForeignKey("companies.company_id"), primary_key=True)
     config: Mapped[dict | None] = mapped_column(JSONB)
     update_at: Mapped[dt | None] = mapped_column()
 

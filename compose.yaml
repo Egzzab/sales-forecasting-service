@@ -1,6 +1,6 @@
 services:
   api:
-    build: .
+    image: forecast-app:local
     ports:
       - "8000:8000"
     env_file:
@@ -8,6 +8,32 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully 
+  
+  migrate:
+    build: .
+    image: forecast-app:local
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    command: alembic upgrade head
+
+
+  migrate_dev:
+    image: forecast-app:local
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
+
+
+
   db:
     image: postgres:17
     environment:
@@ -22,12 +48,12 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  
   tests:
     profiles:
       - test
-    build:
-      context: .
-      dockerfile: Dockerfile.tests
+    image: forecast-app:local
     env_file:
       - .env
     depends_on:

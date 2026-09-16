@@ -7,6 +7,11 @@ COPY requirements.txt .
 RUN python -m pip install --no-cache-dir -r requirements.txt
 
 COPY *.py .
+COPY alembic ./alembic
+COPY alembic.ini .
+COPY tests ./tests
+COPY pytest.ini .
+
 
 CMD [ "python", "-m", "uvicorn", "apy:app", "--host",  "0.0.0.0", "--port",  "8000" ]
 
