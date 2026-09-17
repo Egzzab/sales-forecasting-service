@@ -1,0 +1,40 @@
+name: CI
+
+on:
+    push:
+        branches: [main]
+
+    pull_request:
+        branches: [main]
+    
+
+jobs:
+    test:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+            
+            - name: Create CI environment
+              run: |
+                echo "DB_NAME=forecast_sales" >> .env
+                echo "DB_NAME_TEST=forecast_sales_test" >> .env
+                echo "DB_USER=test_user" >> .env
+                echo "DB_PASSWORD=test_password" >> .env
+                echo "DB_HOST=db" >> .env
+                echo "DB_PORT=5432" >> .env
+                echo "SECRET_KEY=test_secret_key" >> .env
+            
+            - name: Build compose image
+              run: docker compose build
+            
+            - name: make and update bd
+              run: docker compose run --rm -e DB_NAME=forecast_sales_test migrate
+
+            - name: check ORM eq bd
+              run: docker compose run --rm -e DB_NAME=forecast_sales_test migrate_dev alembic check
+
+            - name: pytest
+              run: docker compose run --rm tests
+              
