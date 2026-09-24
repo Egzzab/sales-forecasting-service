@@ -2,7 +2,7 @@ from fastapi import FastAPI,  HTTPException, UploadFile, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, field_validator, model_validator, EmailStr, Field
 from forecast import make_forecast
-from data_base import get_sales_history, save_sales_history, add_company, get_config, save_config, ConfigNotFoundError, CompanyDataNotFoundError, add_user, EmailAlreadyExistsError, get_user, find_user_have_company
+from data_base import get_sales_history, save_sales_history, add_company, get_config, save_config, ConfigNotFoundError, CompanyDataNotFoundError, add_user, EmailAlreadyExistsError, get_user, find_user_have_company, get_companies, CompanyNameAlreadyExistsError
 from feature_engineering import f_ing
 from param import make_param
 from upload import to_df, prepare_sales_df, SalesDataValidationError
@@ -10,7 +10,9 @@ from make_test import make_test
 from history_validation import check_data, HistoryValidationError
 from auth_layer import hash_password, verify_password, create_access_token, decode_access_token
 from jwt import InvalidTokenError
+import pandas as pd
 
+ 
 
 class RequestData(BaseModel):
     price: dict[str, list[float]]
@@ -145,10 +147,16 @@ def load_sales_history(file: UploadFile, company_id: int = Depends(get_company_a
 
 @app.post("/companies")
 def make_company(company: CompanyCreate, user_id: int = Depends(get_user_id)):
-    company_id = add_company(company.name, user_id)
+    try:
+        company_id = add_company(company.name, user_id)
+    except CompanyNameAlreadyExistsError:
+        raise HTTPException(status_code=409, detail="Компания с таким именем уже существует")
     return {"id": company_id}
 
-
+@app.get('/companies')
+def get_company_list(user_id: int = Depends(get_user_id)):
+    user_companies = get_companies(user_id)
+    return {'companies': user_companies}
 
 @app.post("/build_config")
 def build_model_config(company_id: int = Depends(get_company_access)):
@@ -193,6 +201,19 @@ def login_user(info_user: LoginUser):
         'token_type': 'bearer'
     }
     
+@app.get("/last_price")
+def get_last_price(company_id: int = Depends(get_company_access)):
+    try:
+        df, _ = get_sales_history(company_id)
+    except CompanyDataNotFoundError:
+        raise HTTPException(status_code=409, detail="В системе отсутствует история продаж для этой компании")
+    try:
+        df = check_data(df)
+    except HistoryValidationError as err:
+        raise HTTPException(status_code=422, detail=str(err))
+    last_data = df["date"].max()
+    return df[df["date"] == last_data][["product_id", "price", "date"]].to_dict(orient="list")
 
-
-    
+@app.get("/health")
+def health_check():
+    return {"status": "ready"}

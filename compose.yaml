@@ -1,4 +1,15 @@
 services:
+  streamlit:
+    image: forecast-app:local
+    ports:
+      - "8501:8501"
+    environment:
+      - API_URL=http://api:8000
+    depends_on:
+      api:
+        condition: service_healthy
+    command: streamlit run streamlit_app.py --server.address=0.0.0.0 --server.port=8501
+
   api:
     image: forecast-app:local
     ports:
@@ -9,7 +20,14 @@ services:
       db:
         condition: service_healthy
       migrate:
-        condition: service_completed_successfully 
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests, sys; r = requests.get('http://127.0.0.1:8000/health'); sys.exit(0 if r.status_code == 200 else 1)"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+    
   
   migrate:
     build: .

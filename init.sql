@@ -10,8 +10,9 @@ CREATE TABLE users_info(
 CREATE TABLE IF NOT EXISTS public.companies
 (
     company_id integer NOT NULL GENERATED ALWAYS AS IDENTITY ( INCREMENT 1 START 1 MINVALUE 1 MAXVALUE 2147483647 CACHE 1 ),
-    company_name text COLLATE pg_catalog."default",
+    company_name text NOT NULL COLLATE pg_catalog."default",
     user_id INT NOT NULL,
+    CONSTRAINT user_id_company_name UNIQUE (user_id, company_name),
     CONSTRAINT companies_pkey PRIMARY KEY (company_id),
     CONSTRAINT  companies_fk FOREIGN KEY (user_id) REFERENCES users_info(user_id)
 )
