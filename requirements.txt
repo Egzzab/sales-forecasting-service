@@ -16,3 +16,8 @@ pwdlib[argon2]
 PyJWT  
 email-validator
 alembic
+streamlit
+matplotlib
+requests
+openpyxl
+streamlit-local-storage

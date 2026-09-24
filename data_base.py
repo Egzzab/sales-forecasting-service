@@ -1,5 +1,5 @@
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session
-from sqlalchemy import create_engine, URL,  Text, select,  Numeric, ForeignKey
+from sqlalchemy import create_engine, URL,  Text, select,  Numeric, ForeignKey, UniqueConstraint
 from sqlalchemy.dialects.postgresql import insert, JSONB
 from config import get_var_db
 from datetime import date as dt
@@ -18,6 +18,8 @@ class ConfigNotFoundError(Exception):
 class EmailAlreadyExistsError(Exception):
     pass
 
+class CompanyNameAlreadyExistsError(Exception):
+    pass
 
 class Base(DeclarativeBase):
     pass
@@ -36,8 +38,13 @@ class Company(Base):
     __tablename__ = "companies"
 
     company_id: Mapped[int] = mapped_column(primary_key=True)
-    company_name: Mapped[str | None] = mapped_column(Text)
+    company_name: Mapped[str] = mapped_column(Text)
     user_id: Mapped[int] = mapped_column(ForeignKey("users_info.user_id"))
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "company_name", name="user_id_company_name"),
+    )
+
 
 
 
@@ -93,7 +100,11 @@ def add_company(company_name, user_id):
     with Session(make_engine()) as session:
         companyn = Company(company_name = company_name, user_id= user_id)
         session.add(companyn)
-        session.commit()
+        try:
+            session.commit()
+        except IntegrityError:
+            session.rollback()
+            raise CompanyNameAlreadyExistsError
         return companyn.company_id
 
 
@@ -194,3 +205,10 @@ def find_user_have_company(user_id, company_id):
     with Session(make_engine()) as session:
         stmt = select(Company).where(Company.company_id == company_id, Company.user_id == user_id)
         return session.scalar(stmt)
+
+def get_companies(user_id):
+    with Session(make_engine()) as session:
+        stmt = select(Company.company_id, Company.company_name).where(Company.user_id == user_id)
+        list_of_rows = session.execute(stmt).all()
+        return [(row[0], row[1]) for row in list_of_rows]
+    

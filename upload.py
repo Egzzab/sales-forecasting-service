@@ -140,7 +140,18 @@ def prepare_sales_df(df):
     
 
 
-
+def excel_to_df(file):
+    try:
+        dict_price_promo = pd.read_excel(file, sheet_name=["price", "promo"])
+    except Exception:
+        raise FileReadError("Не удалось прочитать файл")
+    new_user_price = dict_price_promo["price"]
+    new_user_promo = dict_price_promo["promo"]
+    if new_user_price.empty or new_user_promo.empty:
+        raise FileReadError("Один из листов пуст")
+    if "products" not in new_user_price.columns or "products" not in new_user_promo.columns:
+        raise FileReadError("Отсутствует колонка products")
+    return new_user_price, new_user_promo
 
 
 
